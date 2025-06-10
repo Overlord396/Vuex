@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Список дел</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://unpkg.com/vuex@4"></script>
+</head>
+<body>
+  <div id="app">
+    <h1>Мой список дел</h1>
+    
+    <div class="add-task">
+      <input 
+        v-model="newTask" 
+        @keyup.enter="addTask" 
+        placeholder="Добавить новую задачу..."
+      >
+      <button @click="addTask">Добавить</button>
+    </div>
+
+    <div class="task-list">
+      <div 
+        v-for="(task, index) in tasks" 
+        :key="index" 
+        class="task-item"
+      >
+        <input 
+          type="checkbox" 
+          :checked="task.completed"
+          @change="toggleTask(index)"
+        >
+        <span 
+          class="task-text" 
+          :class="{ completed: task.completed }"
+        >
+          {{ task.text }}
+        </span>
+        <button @click="removeTask(index)">🗑️</button>
+      </div>
+      
+      <div v-if="tasks.length === 0">
+        Список задач пуст
+      </div>
+    </div>
+
+    <div class="stats">
+      Всего: {{ totalTasks }} | Выполнено: {{ completedTasks }}
+    </div>
+  </div>
+
+  <script>
+    const store = Vuex.createStore({
+      state() {
+        return {
+          tasks: [
+            { text: 'Выгулять собаку', completed: false },
+            { text: 'Помыть посуду', completed: true }
+          ]
+        }
+      },
+      mutations: {
+        ADD_TASK(state, task) {
+          state.tasks.push(task);
+        },
+        TOGGLE_TASK(state, index) {
+          state.tasks[index].completed = !state.tasks[index].completed;
+        },
+        REMOVE_TASK(state, index) {
+          state.tasks.splice(index, 1);
+        }
+      },
+      actions: {
+        addTask({ commit }, task) {
+          commit('ADD_TASK', task);
+        },
+        toggleTask({ commit }, index) {
+          commit('TOGGLE_TASK', index);
+        },
+        removeTask({ commit }, index) {
+          commit('REMOVE_TASK', index);
+        }
+      },
+      getters: {
+        totalTasks: state => state.tasks.length,
+        completedTasks: state => state.tasks.filter(t => t.completed).length
+      }
+    });
+
+    const app = Vue.createApp({
+      data() {
+        return {
+          newTask: ''
+        }
+      },
+      computed: {
+        tasks() {
+          return this.$store.state.tasks;
+        },
+        totalTasks() {
+          return this.$store.getters.totalTasks;
+        },
+        completedTasks() {
+          return this.$store.getters.completedTasks;
+        }
+      },
+      methods: {
+        addTask() {
+          if (this.newTask.trim()) {
+            this.$store.dispatch('addTask', {
+              text: this.newTask.trim(),
+              completed: false
+            });
+            this.newTask = '';
+          }
+        },
+        toggleTask(index) {
+          this.$store.dispatch('toggleTask', index);
+        },
+        removeTask(index) {
+          this.$store.dispatch('removeTask', index);
+        }
+      }
+    });
+
+    app.use(store);
+    app.mount('#app');
+  </script>
+</body>
+</html>
